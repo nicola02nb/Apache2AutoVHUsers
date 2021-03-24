@@ -23,7 +23,7 @@ elif [ $funz = "2" ]; then
 		adduser "$username"
 		echo "USER-> $username ADDED"
 		#
-		curl https://git.e-fermi.it/s01723/apache2autovhusers/-/raw/master/userfiles.tgz?inline=false --output /home/"$username"/userfiles.tgz
+		curl https://git.e-fermi.it/s01723/apache2autovhusers/-/raw/master/userfiles.tgz --output /home/"$username"/userfiles.tgz
 		tar xf /home/"$username"/userfiles.tgz -C /home/"$username"/
 		mv /home/"$username"/defaultuser/* /home/"$username"/
 		rm -r /home/"$username"/defaultuser
@@ -31,7 +31,7 @@ elif [ $funz = "2" ]; then
 		#cp -r /home/defaultuser/* /home/"$username"/
 		setfacl -R -m u:"$username":rwx /home/"$username"/
 		setfacl -R -m o::--- /home/"$username"
-		curl https://git.e-fermi.it/s01723/apache2autovhusers/-/raw/master/defaultuser.conf?inline=false --output /etc/apache2/sites-available/"$username".conf
+		curl https://git.e-fermi.it/s01723/apache2autovhusers/-/raw/master/defaultuser.conf --output /etc/apache2/sites-available/"$username".conf
 		#cp /etc/apache2/sites-available/defaultuser.conf /etc/apache2/sites-available/"$username".conf 
 		sed -i "s/defaultuser/$username/" /etc/apache2/sites-available/"$username".conf
 		sed -i "s/defaultuser/$username/" /etc/apache2/sites-available/"$username".conf

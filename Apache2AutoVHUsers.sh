@@ -10,9 +10,12 @@ read funz
 echo -e "\\n"
 
 if [ $funz = "1" ]; then
-	apt-get install acl apache2 php libapache2-mod-php php-mysql
+	apt-get install acl curl apache2 php libapache2-mod-php php-mysql
 	apt-get install libapache2-mpm-itk
+	a2enmod php*
 	a2enmod mpm_itk
+	systemctl restart apache2
+
 
 elif [ $funz = "2" ]; then
 	echo "Enter the username to INSERT: "

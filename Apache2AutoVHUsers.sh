@@ -6,7 +6,7 @@ echo -e -n "3) Delete User\\n"
 echo -e -n "4) Uninstall Service\\n"
 
 echo -n "INSERT FUNCTION: "
-read -s funz
+read funz
 echo -e "\\n"
 
 if [ $funz = "1" ]; then
@@ -45,6 +45,7 @@ elif [ $funz = "3" ]; then
 		a2dissite "$username"
 		systemctl reload apache2
 		userdel "$username"
+		rm -r /home/"$username"/
 		rm /etc/apache2/sites-available/"$username".conf
 	else
 		echo "ERROR: THE USER DOESN'T EXISTS"		

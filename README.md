@@ -11,11 +11,14 @@ Lo script e mirato a creare dei **Virtual Host** per ogni singolo utente, i qual
 Installato e testato su server DEBIAN 10 64bit
 
 Dipendenze necessarie per l'utilizzo `curl`:
+
 `sudo apt install curl`
 
 Per utilizzare lo script basta scaricatrlo tramite:
 `curl https://git.e-fermi.it/s01723/apache2autovhusers/-/raw/master/Apache2AutoVHUsers.sh --output Apache2AutoVHUsers.sh`
+
 Poi bisogna dargli i permessi di esecuzione:
+
 `chmod +x ./Apache2AutoVHUsers.sh`
 
 ## Utilizo

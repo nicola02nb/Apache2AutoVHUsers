@@ -117,6 +117,7 @@ elif [ $funz = "5" ]; then
 		apt-get purge apache2 php libapache2-mod-php php-mysql
 	fi
 	groupdel VHapache2
+	rm -r $TMPDIR
 	echo -e -n "SERVICE UNINSTALLED\\n"
 
 else 

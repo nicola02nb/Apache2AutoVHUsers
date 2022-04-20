@@ -4,9 +4,13 @@ if [ "$EUID" -ne 0 ]
   exit
 fi
 
+PHOSTNAME=$HOSTNAME
+
 PHOME=/home/
 PVARTMP=/var/tmp/
 PAPACHE=/etc/apache2/
+
+TMPDIR=$PVARTMP/Apache2AutoVHUsers/
 
 echo -e -n "SELECT FUNCTION:\\n"
 echo -e -n "1) Install Service\\n"
@@ -14,6 +18,7 @@ echo -e -n "2) Add New \\ Existing User\\n"
 echo -e -n "3) Disable User\\n"
 echo -e -n "4) Delete User (It Delete all user's files from home)\\n"
 echo -e -n "5) Uninstall Service\\n"
+echo -e -n "6) Clear Temporary Files\\n"
 
 echo -n "INSERT FUNCTION: "
 read funz
@@ -42,7 +47,6 @@ elif [ $funz = "2" ]; then
 		echo -e "INFO: NEW USER \"$username\" ADDED to SYSTEM USERS\\n"	
 	fi
 	#
-	TMPDIR=$PVARTMP/Apache2AutoVHUsers/
 	DIR1=$TMPDIR/userfiles/
 	FILE1=$TMPDIR/defaultuser.conf
 	#
@@ -52,23 +56,26 @@ elif [ $funz = "2" ]; then
 		echo "Creating Temporary Folder"
 		mkdir $TMPDIR	
 		if ! [ -d $DIR1 ]; then
-			curl -sL https://github.com/nicola02nb/Apache2AutoVHUsers/raw/dev/userfiles.tar.gz --output $TMPDIR/userfiles.tar.gz
+			#cp ./userfiles.tar.gz $TMPDIR #USE ONLY IF YOU ARE WORKING WITH REPO
+			curl -sL https://github.com/nicola02nb/Apache2AutoVHUsers/raw/dev/userfiles.tar.gz --output $TMPDIR/userfiles.tar.gz #COMMENT THIS LINE WHILE WORKING WITH REPO
 			tar xf $TMPDIR/userfiles.tar.gz -C $TMPDIR --one-top-level
 			rm $TMPDIR/userfiles.tar.gz
 		fi
 		if ! [ -f $FILE1 ] ; then
-			curl -sL https://github.com/nicola02nb/Apache2AutoVHUsers/raw/dev/defaultuser.conf --output $FILE1
+			#cp ./defaultuser.conf $TMPDIR #USE ONLY IF YOU ARE WORKING WITH REPO
+			curl -sL https://github.com/nicola02nb/Apache2AutoVHUsers/raw/dev/defaultuser.conf --output $FILE1 #COMMENT THIS LINE WHILE WORKING WITH REPO
 		fi
 	else
 		echo "No download needed, Using Temporary Files..."
 	fi
 	#
-	cp -R $DIR1/* $PHOME/"$username"/
+	cp -R $DIR1/ $PHOME/"$username"/apache2/
+	mkdir $PHOME/"$username"/apache2/logs/
 	setfacl -R -m u:"$username":rwx $PHOME/"$username"/
 	setfacl -R -m o::--- $PHOME/"$username"
 	
 	cp $FILE1 $PAPACHE/sites-available/"$username".conf 
-	
+	sed -i "s/vhserverdomain/$PHOSTNAME/" $PAPACHE/sites-available/"$username".conf
 	sed -i "s/defaultuser/$username/" $PAPACHE/sites-available/"$username".conf
 	sed -i "s/defaultuser/$username/" $PAPACHE/sites-available/"$username".conf
 	#
@@ -112,13 +119,18 @@ elif [ $funz = "5" ]; then
 	a2dismod mpm_itk
 	apt-get purge libapache2-mpm-itk
 	systemctl reload apache2
-	if [ "$uninstall" = "N" -o "$uninstall" = "n" ]; then
+	if [ "$uninstall" = "y" -o "$uninstall" = "Y" ]; then
 		systemctl stop apache2
 		apt-get purge apache2 php libapache2-mod-php php-mysql
 	fi
 	groupdel VHapache2
-	rm -r $TMPDIR
+	rm -R $TMPDIR
 	echo -e -n "SERVICE UNINSTALLED\\n"
+
+elif [ $funz = "6" ]; then
+	echo -e -n "Deleting Temporary Files...\\n"
+	rm -r $TMPDIR
+	echo -e -n "TEMPORARY FILES DELETED\\n"
 
 else 
 	echo -e -n "Bad function selected\\n"

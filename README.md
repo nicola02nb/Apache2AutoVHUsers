@@ -7,17 +7,19 @@ will be executed with separated and indipendent user permissions to prevent secu
 - **Access** to other users' files trough `php`
 - Use of different users permissions reather than one shared like `www-data`'s permissions
 
-## Installation
+## Requirements
 
-Installed and Tested on **DEBIAN 10 64\32bit** server
-
-Dependencies required for use `curl, apache2`:
+Dependencies required to be installed use this script `curl`:
 
 `sudo apt install curl`
 
-To use the script just **download it** via:
+Software like `tar, curl, apache2, php` are also needed during some steps of the installation and utilization of the service.
 
-`curl https://git.e-fermi.it/s01723/apache2autovhusers/-/raw/master/Apache2AutoVHUsers.sh --output Apache2AutoVHUsers.sh`
+## Installation
+
+To use the script just **download it** via bash command:
+
+`curl -sL https://github.com/nicola02nb/Apache2AutoVHUsers/raw/master/Apache2AutoVHUsers.sh --output Apache2AutoVHUsers.sh`
 
 Then you have to give it permission to **execute**:
 
@@ -27,4 +29,8 @@ Then you have to give it permission to **execute**:
 
 To run it just run the file `.sh`:
 
-`./Apache2AutoVHUsers.sh`
+`sudo ./Apache2AutoVHUsers.sh`
+
+## Compatibliliy
+
+Installed and Tested on **Debian 10 64\32bit** server.

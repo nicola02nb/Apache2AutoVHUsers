@@ -1,64 +1,125 @@
 #!/bin/bash
+if [ "$EUID" -ne 0 ]
+  then echo "Please run as root"
+  exit
+fi
+
+PHOME=/home/
+PVARTMP=/var/tmp/
+PAPACHE=/etc/apache2/
+
 echo -e -n "SELECT FUNCTION:\\n"
 echo -e -n "1) Install Service\\n"
-echo -e -n "2) Add User\\n"
-echo -e -n "3) Delete User\\n"
-echo -e -n "4) Uninstall Service\\n"
+echo -e -n "2) Add New \\ Existing User\\n"
+echo -e -n "3) Disable User\\n"
+echo -e -n "4) Delete User (It Delete all user's files from home)\\n"
+echo -e -n "5) Uninstall Service\\n"
 
 echo -n "INSERT FUNCTION: "
 read funz
-echo -e "\\n"
 
 if [ $funz = "1" ]; then
+	echo "CHECKING AND INSTALLING MISSING DEPENDENCIES"
 	apt-get install acl curl apache2 php libapache2-mod-php php-mysql
+	echo "INSTALLING MOD"
 	apt-get install libapache2-mpm-itk
 	a2enmod php*
 	a2enmod mpm_itk
+	echo "RESTARTING apache2 service"
 	systemctl restart apache2
-
+	echo -e "CREATING new SYSTEM group \"VHapache2\" (ID: 1222)"
+	groupadd -g 1222 VHapache2
+	echo "SERVICE SUCCESFULLY INSTALLED"
 
 elif [ $funz = "2" ]; then
-	echo "Enter the username to INSERT: "
+	echo -n "Enter the username to INSERT: "
 	read username
 	if getent passwd $username > /dev/null 2>&1; then
-    		echo "ERROR: THE USER ALREADY EXISTS"
+		echo -e "INFO: THE USER ALREADY EXISTS\\n"
+			
 	else
-		adduser "$username"
-		echo "USER-> $username ADDED"
-		#
-		curl https://git.e-fermi.it/s01723/apache2autovhusers/-/raw/master/userfiles.tgz --output /home/"$username"/userfiles.tgz
-		tar xf /home/"$username"/userfiles.tgz -C /home/"$username"/
-		mv /home/"$username"/defaultuser/* /home/"$username"/
-		rm -r /home/"$username"/defaultuser
-		rm /home/"$username"/userfiles.tgz
-		#cp -r /home/defaultuser/* /home/"$username"/
-		setfacl -R -m u:"$username":rwx /home/"$username"/
-		setfacl -R -m o::--- /home/"$username"
-		curl https://git.e-fermi.it/s01723/apache2autovhusers/-/raw/master/defaultuser.conf --output /etc/apache2/sites-available/"$username".conf
-		#cp /etc/apache2/sites-available/defaultuser.conf /etc/apache2/sites-available/"$username".conf 
-		sed -i "s/defaultuser/$username/" /etc/apache2/sites-available/"$username".conf
-		sed -i "s/defaultuser/$username/" /etc/apache2/sites-available/"$username".conf
-		a2ensite "$username"
-		systemctl reload apache2
+		adduser --disabled-password --gecos "" "$username"
+		echo -e "INFO: NEW USER \"$username\" ADDED to SYSTEM USERS\\n"	
 	fi
+	#
+	TMPDIR=$PVARTMP/Apache2AutoVHUsers/
+	DIR1=$TMPDIR/userfiles/
+	FILE1=$TMPDIR/defaultuser.conf
+	#
+	echo "Downloading necessary files from Repository (https://github.com/nicola02nb/Apache2AutoVHUsers)"
+	#
+	if ! [ -d $TMPDIR ]; then
+		echo "Creating Temporary Folder"
+		mkdir $TMPDIR	
+		if ! [ -d $DIR1 ]; then
+			curl -sL https://github.com/nicola02nb/Apache2AutoVHUsers/raw/dev/userfiles.tar.gz --output $TMPDIR/userfiles.tar.gz
+			tar xf $TMPDIR/userfiles.tar.gz -C $TMPDIR --one-top-level
+			rm $TMPDIR/userfiles.tar.gz
+		fi
+		if ! [ -f $FILE1 ] ; then
+			curl -sL https://github.com/nicola02nb/Apache2AutoVHUsers/raw/dev/defaultuser.conf --output $FILE1
+		fi
+	else
+		echo "No download needed, Using Temporary Files..."
+	fi
+	#
+	cp -R $DIR1/* $PHOME/"$username"/
+	setfacl -R -m u:"$username":rwx $PHOME/"$username"/
+	setfacl -R -m o::--- $PHOME/"$username"
+	
+	cp $FILE1 $PAPACHE/sites-available/"$username".conf 
+	
+	sed -i "s/defaultuser/$username/" $PAPACHE/sites-available/"$username".conf
+	sed -i "s/defaultuser/$username/" $PAPACHE/sites-available/"$username".conf
+	#
+	echo -e "Enabling service to $username..."
+	a2ensite "$username"
+	echo -e "Restarting Apache2 service\\n"
+	systemctl reload apache2
+
+	usermod -a -G VHapache2 "$username"
+	echo -e "USER \"$username\" added to Group VHapache2 (ID: 1222)"
+
 elif [ $funz = "3" ]; then
-	echo -n "Enter the username to DELETE: "
+	echo -n "Enter the username to DISABLE Service: "
+	read username
+	if getent passwd $username > /dev/null 2>&1; then
+		a2dissite "$username"
+		deluser "$username" VHapache2
+		systemctl reload apache2
+		echo -e "DISABLED VH to \"$username\"; removed form Group VHapache2 (ID: 1222)"
+	else
+		echo "ERROR: THE USER DOESN'T EXISTS"		
+	fi
+
+elif [ $funz = "4" ]; then
+	echo -n "Enter the username to DELETE (WARNING: Deleting also all user's files): "
 	read username
 	if getent passwd $username > /dev/null 2>&1; then
 		a2dissite "$username"
 		systemctl reload apache2
+		echo -e "DELETING USER HOME DIR \"$username\""
 		userdel "$username"
-		rm -r /home/"$username"/
-		rm /etc/apache2/sites-available/"$username".conf
+		rm -r $PHOME/"$username"/
+		rm $PAPACHE/sites-available/"$username".conf
 	else
 		echo "ERROR: THE USER DOESN'T EXISTS"		
 	fi
-elif [ $funz = "4" ]; then
-	systemctl stop apache2
+
+elif [ $funz = "5" ]; then
+	echo -n "Do you wanna Uninstall also Apache2 and PHP? [y\N]: "
+	read uninstall
 	a2dismod mpm_itk
 	apt-get purge libapache2-mpm-itk
-	apt-get purge apache2 php libapache2-mod-php php-mysql
+	systemctl reload apache2
+	if [ "$uninstall" = "N" -o "$uninstall" = "n" ]; then
+		systemctl stop apache2
+		apt-get purge apache2 php libapache2-mod-php php-mysql
+	fi
+	groupdel VHapache2
+	rm -r $TMPDIR
 	echo -e -n "SERVICE UNINSTALLED\\n"
+
 else 
 	echo -e -n "Bad function selected\\n"
 fi

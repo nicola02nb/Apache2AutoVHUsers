@@ -1,12 +1,12 @@
 #!/bin/bash
-PHOME=/home/
-PVARTMP=/var/tmp/
-PAPACHE=/etc/apache2/
-
 if [ "$EUID" -ne 0 ]
   then echo "Please run as root"
   exit
 fi
+
+PHOME=/home/
+PVARTMP=/var/tmp/
+PAPACHE=/etc/apache2/
 
 echo -e -n "SELECT FUNCTION:\\n"
 echo -e -n "1) Install Service\\n"
@@ -45,23 +45,25 @@ elif [ $funz = "2" ]; then
 	TMPDIR=$PVARTMP/Apache2AutoVHUsers/
 	DIR1=$TMPDIR/userfiles/
 	FILE1=$TMPDIR/defaultuser.conf
-	echo -e "Enabling service to $username...\n"
+	#
 	echo "Downloading necessary files from Repository (https://github.com/nicola02nb/Apache2AutoVHUsers)"
+	#
 	if ! [ -d $TMPDIR ]; then
 		echo "Creating Temporary Folder"
 		mkdir $TMPDIR	
-	fi
-	if ! [ -d $DIR1 ]; then
-		curl https://github.com/nicola02nb/Apache2AutoVHUsers/raw/dev/userfiles.tar.gz --output $TMPDIR/userfiles.tar.gz
-		tar xf $TMPDIR/userfiles.tar.gz -C $TMPDIR --one-top-level
-		rm $TMPDIR/userfiles.tar.gz
-	elif ! [ -f $FILE1 ] ; then
-		curl https://github.com/nicola02nb/Apache2AutoVHUsers/raw/dev/defaultuser.conf --output $FILE1
+		if ! [ -d $DIR1 ]; then
+			curl -sL https://github.com/nicola02nb/Apache2AutoVHUsers/raw/dev/userfiles.tar.gz --output $TMPDIR/userfiles.tar.gz
+			tar xf $TMPDIR/userfiles.tar.gz -C $TMPDIR --one-top-level
+			rm $TMPDIR/userfiles.tar.gz
+		fi
+		if ! [ -f $FILE1 ] ; then
+			curl -sL https://github.com/nicola02nb/Apache2AutoVHUsers/raw/dev/defaultuser.conf --output $FILE1
+		fi
 	else
 		echo "No download needed, Using Temporary Files..."
 	fi
-	
-	cp $DIR1/* $PHOME/"$username"/
+	#
+	cp -R $DIR1/* $PHOME/"$username"/
 	setfacl -R -m u:"$username":rwx $PHOME/"$username"/
 	setfacl -R -m o::--- $PHOME/"$username"
 	
@@ -69,8 +71,10 @@ elif [ $funz = "2" ]; then
 	
 	sed -i "s/defaultuser/$username/" $PAPACHE/sites-available/"$username".conf
 	sed -i "s/defaultuser/$username/" $PAPACHE/sites-available/"$username".conf
-
+	#
+	echo -e "Enabling service to $username..."
 	a2ensite "$username"
+	echo -e "Restarting Apache2 service\\n"
 	systemctl reload apache2
 
 	usermod -a -G VHapache2 "$username"
@@ -94,6 +98,7 @@ elif [ $funz = "4" ]; then
 	if getent passwd $username > /dev/null 2>&1; then
 		a2dissite "$username"
 		systemctl reload apache2
+		echo -e "DELETING USER HOME DIR \"$username\""
 		userdel "$username"
 		rm -r $PHOME/"$username"/
 		rm $PAPACHE/sites-available/"$username".conf

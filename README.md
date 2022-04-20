@@ -13,7 +13,7 @@ Dependencies required to be installed use this script `curl`:
 
 `sudo apt install curl`
 
-Software like `tar, curl, apache2, php` are also needed during some steps of the installation and utilization of the service.
+Software like `tar, apache2, php` are also needed during some steps of the installation and utilization of the service.
 
 ## Installation
 

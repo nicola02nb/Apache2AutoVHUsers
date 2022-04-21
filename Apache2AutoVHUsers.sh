@@ -4,13 +4,37 @@ if [ "$EUID" -ne 0 ]
   exit
 fi
 
+# sudo ./Apache2AutoVHUsers.sh [ -1|-5|-6 ] | [ -2|-3|-4 [ 'username' ] | [ --list-file '/file/path/*.txt' ] ]
+
+#######################
+#File (.txt) Example: #
+#Lines ################
+########
+#1#
+#2#	utente1, utente2, utente3, utente4, utente5,
+#3# utente6,
+#4#
+#5# utente7, utente8, utente9,
+#6# utente10, etc ...
+#7#
+#8#
+#9#
+###
+
+
+### EDITABLE VARIABLES TO ADAPT TO YOUR ENVIROMENT ###
 PHOSTNAME=$HOSTNAME
 
 PHOME=/home/
 PVARTMP=/var/tmp/
 PAPACHE=/etc/apache2/
 
-TMPDIR=$PVARTMP/Apache2AutoVHUsers/
+TMPDIR=$PVARTMP/Apache2AutoVHUsers/						
+######################################################
+
+$funz=""
+$listfile=""
+$username=""
 
 echo -e -n "SELECT FUNCTION:\\n"
 echo -e -n "1) Install Service\\n"
@@ -20,10 +44,22 @@ echo -e -n "4) Delete User (It Delete all user's files from home)\\n"
 echo -e -n "5) Uninstall Service\\n"
 echo -e -n "6) Clear Temporary Files\\n\\n"
 
-echo -n "INSERT FUNCTION: "
-read funz
+if [ $1 = "-1" -o  $1 = "-5" -o $1 = "-6" ]; then
+	$funz = ${str: 1:1}
+elif [ $1 = "-2" -o $1 = "-3" -o $1 = "-4" ]; then
+	$funz = ${str: 1:1}
+	if [ $2 = "--list-file"]; then
+		$listfile=$3
+	else 
+		$username=$2
+	fi
+else
+	echo -n "INSERT FUNCTION: "
+	read funz
+fi
 
 if [ $funz = "1" ]; then
+	echo "----- INSTALLING SERVICE -----"
 	echo "CHECKING AND INSTALLING MISSING DEPENDENCIES"
 	apt-get -y install acl curl apache2 php libapache2-mod-php php-mysql
 	echo "INSTALLING MOD"
@@ -37,8 +73,11 @@ if [ $funz = "1" ]; then
 	echo "SERVICE SUCCESFULLY INSTALLED"
 
 elif [ $funz = "2" ]; then
-	echo -n "Enter the username to INSERT: "
-	read username
+	echo "----- ENABLING USER -----"
+	if [ $username = "" ]; then
+		echo -n "Enter the username to INSERT: "
+		read username
+	fi
 	if getent passwd $username > /dev/null 2>&1; then
 		echo -e "INFO: THE USER ALREADY EXISTS\\n"
 			
@@ -88,8 +127,11 @@ elif [ $funz = "2" ]; then
 	echo -e "USER \"$username\" added to Group VHapache2 (ID: 1222)"
 
 elif [ $funz = "3" ]; then
-	echo -n "Enter the username to DISABLE Service: "
-	read username
+	echo "----- DISABLING USER SERVICE -----"
+	if [ $username = "" ]; then
+		echo -n "Enter the username to DISABLE Service: "
+		read username
+	fi
 	if getent passwd $username > /dev/null 2>&1; then
 		a2dissite "$username"
 		deluser "$username" VHapache2
@@ -100,8 +142,11 @@ elif [ $funz = "3" ]; then
 	fi
 
 elif [ $funz = "4" ]; then
-	echo -n "Enter the username to DELETE (WARNING: Deleting also all user's files): "
-	read username
+echo "----- DELETING USER -----"
+	if [ $username = "" ]; then
+		echo -n "Enter the username to DELETE (WARNING: Deleting also all user's files): "
+		read username
+	fi
 	if getent passwd $username > /dev/null 2>&1; then
 		a2dissite "$username"
 		systemctl reload apache2
@@ -114,6 +159,7 @@ elif [ $funz = "4" ]; then
 	fi
 
 elif [ $funz = "5" ]; then
+	echo "----- UNINSTALLING SERVICE -----"
 	echo -n "Do you wanna Uninstall also Apache2 and PHP? [y\N]: "
 	read uninstall
 	a2dismod mpm_itk
@@ -129,11 +175,11 @@ elif [ $funz = "5" ]; then
 	echo -e -n "SERVICE UNINSTALLED\\n"
 
 elif [ $funz = "6" ]; then
-	echo -e -n "Deleting Temporary Files...\\n"
+	echo -e -n "----- DELETINH TEMPORARY FILES -----\\n"
 	rm -r $TMPDIR
 	echo -e -n "TEMPORARY FILES DELETED\\n"
 
 else 
-	echo -e -n "Bad function selected\\n"
+	echo -e -n "----- BAD FUNCTION SELECTED\\n"
 fi
 

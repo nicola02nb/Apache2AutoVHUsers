@@ -29,7 +29,7 @@ Then you have to give it permission to **execute**:
 
 To run it just run the file `.sh`:
 
-`sudo ./Apache2AutoVHUsers.sh`
+`sudo ./Apache2AutoVHUsers.sh [ -1|-5|-6 ]  |  [ -2|-3|-4 [ 'username' ] | [ --list-file '/file/path/*.txt' ] ]`
 
 ## Compatibliliy
 

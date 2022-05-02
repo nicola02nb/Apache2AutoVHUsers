@@ -74,10 +74,10 @@ if [ $funz = "1" ]; then
 
 elif [ $funz = "2" ]; then
 	echo "----- ENABLING USER -----"
-	if [ $username = "" ]; then
-		echo -n "Enter the username to INSERT: "
+	while [ $username = "" ]; do
+		echo -n "Enter the username to INSERT (CANNOT BE EMPTY): "
 		read username
-	fi
+	done
 	if getent passwd $username > /dev/null 2>&1; then
 		echo -e "INFO: THE USER ALREADY EXISTS\\n"
 			
@@ -128,10 +128,10 @@ elif [ $funz = "2" ]; then
 
 elif [ $funz = "3" ]; then
 	echo "----- DISABLING USER SERVICE -----"
-	if [ $username = "" ]; then
-		echo -n "Enter the username to DISABLE Service: "
+	while [ $username = "" ]; do
+		echo -n "Enter the username to INSERT (CANNOT BE EMPTY): "
 		read username
-	fi
+	done
 	if getent passwd $username > /dev/null 2>&1; then
 		a2dissite "$username"
 		deluser "$username" VHapache2
@@ -143,10 +143,10 @@ elif [ $funz = "3" ]; then
 
 elif [ $funz = "4" ]; then
 echo "----- DELETING USER -----"
-	if [ $username = "" ]; then
-		echo -n "Enter the username to DELETE (WARNING: Deleting also all user's files): "
+	while [ $username = "" ]; do
+		echo -n "Enter the username to INSERT (CANNOT BE EMPTY): "
 		read username
-	fi
+	done
 	if getent passwd $username > /dev/null 2>&1; then
 		a2dissite "$username"
 		systemctl reload apache2

@@ -142,7 +142,7 @@ elif [ $funz = "3" ]; then
 	fi
 
 elif [ $funz = "4" ]; then
-echo "----- DELETING USER -----"
+	echo "----- DELETING USER -----"
 	while [ $username = "" ]; do
 		echo -n "Enter the username to INSERT (CANNOT BE EMPTY): "
 		read username

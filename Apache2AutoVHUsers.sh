@@ -4,7 +4,7 @@ if [ "$EUID" -ne 0 ]
   exit
 fi
 
-# sudo ./Apache2AutoVHUsers.sh [ -1|-5|-6 ] | [ -2|-3|-4 [ 'username' ] | [ --list-file '/file/path/*.txt' ] ]
+# sudo ./Apache2AutoVHUsers.sh [ -1|-5|-6 ] | [ -2|-3|-4 [ 'username' 'password' ] | [ --list-file '/file/path/*.txt' ] ]
 
 #######################
 #File (.txt) Example: #
@@ -36,6 +36,7 @@ TMPDIR=$PVARTMP/Apache2AutoVHUsers/
 funz=""
 listfile=""
 username=""
+defaultpassword="defaultpassword"
 grouname="VHapache2"
 groupid="1222"
 
@@ -43,7 +44,7 @@ echo -e -n "SELECT FUNCTION:\\n"
 echo -e -n "1) Install Service\\n"
 echo -e -n "2) Add New \\ Existing User\\n"
 echo -e -n "3) Disable User\\n"
-echo -e -n "4) Delete User (It Delete all user's files from home)\\n"
+echo -e -n "4) Delete User (It Delete all user's files from home, and his database)\\n"
 echo -e -n "5) Uninstall Service\\n"
 echo -e -n "6) Clear Temporary Files\\n"
 echo -e -n "7) Show Service-Installed Users\\n\\n"
@@ -56,6 +57,9 @@ elif [ "$1" = "-2" ] || [ "$1" = "-3" ] || [ "$1" = "-4" ]; then
 		listfile="$3"
 	else 
 		username="$2"
+		if ! [ "$3" = "" ]; then
+			defaultpassword="$3"
+		fi
 	fi
 else
 	echo -n "INSERT FUNCTION: "
@@ -65,7 +69,7 @@ fi
 if [ "$funz" = "1" ]; then
 	echo "----- INSTALLING SERVICE -----"
 	echo "CHECKING AND INSTALLING MISSING DEPENDENCIES"
-	apt-get -y install acl curl apache2 php libapache2-mod-php php-mysql
+	apt-get -y install acl curl apache2 php libapache2-mod-php php-mysql mariadb-server
 	echo "INSTALLING MOD"
 	apt-get -y install libapache2-mpm-itk
 	a2enmod php*
@@ -87,6 +91,7 @@ elif [ "$funz" = "2" ]; then
 			
 	else
 		adduser --disabled-password --gecos "" "$username"
+		echo "$username:$defaultpassword" | chpasswd
 		echo -e "\\nINFO: NEW USER \"$username\" ADDED to SYSTEM USERS\\n"	
 	fi
 	#
@@ -129,6 +134,11 @@ elif [ "$funz" = "2" ]; then
 
 	usermod -a -G $grouname "$username"
 	echo -e "USER \"$username\" added to Group $grouname (ID: $groupid)"
+	echo "Creating database for $username...."
+	mysql -u root -e "CREATE database $username;"
+	mysql -u root -e "CREATE USER '$username'@localhost IDENTIFIED BY '$defaultpassword';"
+	mysql -u root -e "GRANT ALL PRIVILEGES ON $username.* TO '$username'@localhost;"
+	mysql -u root -e "FLUSH PRIVILEGES;"
 
 elif [ "$funz" = "3" ]; then
 	echo "----- DISABLING USER SERVICE -----"
@@ -158,20 +168,25 @@ elif [ "$funz" = "4" ]; then
 		userdel "$username"
 		rm -r $PHOME/"$username"/
 		rm $PAPACHE/sites-available/"$username".conf
+		echo -e "DELETING USER Database"
+		mysql -u root -e "REVOKE ALL PRIVILEGES, GRANT OPTION FROM '$username'@'localhost';"
+		mysql -u root -e "DROP USER IF EXISTS '$username'@'localhost';"
+		mysql -u root -e "DROP database IF EXISTS $username;"
+		mysql -u root -e "FLUSH PRIVILEGES;"
 	else
 		echo "ERROR: THE USER DOESN'T EXISTS"		
 	fi
 
 elif [ "$funz" = "5" ]; then
 	echo "----- UNINSTALLING SERVICE -----"
-	echo -n "Do you wanna Uninstall also Apache2 and PHP? [y\N]: "
+	echo -n "Do you wanna Uninstall also Apache2, PHP and MariaDB? [y\N]: "
 	read uninstall
 	a2dismod mpm_itk
 	apt-get -y purge libapache2-mpm-itk
 	systemctl reload apache2
 	if [ "$uninstall" = "y" -o "$uninstall" = "Y" ]; then
 		systemctl stop apache2
-		apt-get -y purge apache2 php libapache2-mod-php php-mysql
+		apt-get -y purge apache2 php libapache2-mod-php php-mysql mariadb-server
 		rm -R /etc/apache2/
 	fi
 	groupdel $grouname

@@ -179,7 +179,7 @@ elif [ "$funz" = "5" ]; then
 	echo -e -n "SERVICE UNINSTALLED\\n"
 
 elif [ "$funz" = "6" ]; then
-	echo -e -n "----- DELETINH TEMPORARY FILES -----\\n"
+	echo -e -n "----- DELETING TEMPORARY FILES -----\\n"
 	rm -r $TMPDIR
 	echo -e -n "TEMPORARY FILES DELETED\\n"
 

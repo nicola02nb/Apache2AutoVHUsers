@@ -8,22 +8,23 @@ fi
 
 #######################
 #File (.txt) Example: #
-#Lines ################
-########
-#1#
-#2#	utente1, utente2, utente3, utente4, utente5,
-#3# utente6,
-#4#
-#5# utente7, utente8, utente9,
-#6# utente10, etc ...
-#7#
-#8#
-#9#
-###
+#Line # 			
+#######################
+	#1#
+	#2#	utente1, utente2, utente3, utente4, utente5,
+	#3# utente6,
+	#4#
+	#5# utente7, utente8, utente9,
+	#6# utente10, etc ...
+	#7#
+	#8#
+	#9#
+	###
 
 
 ### EDITABLE VARIABLES TO ADAPT TO YOUR ENVIROMENT ###
-PHOSTNAME=$HOSTNAME
+
+#PHOSTNAME=$HOSTNAME
 
 PHOME=/home/
 PVARTMP=/var/tmp/
@@ -32,9 +33,11 @@ PAPACHE=/etc/apache2/
 TMPDIR=$PVARTMP/Apache2AutoVHUsers/						
 ######################################################
 
-$funz=""
-$listfile=""
-$username=""
+funz=""
+listfile=""
+username=""
+grouname="VHapache2"
+groupid="1222"
 
 echo -e -n "SELECT FUNCTION:\\n"
 echo -e -n "1) Install Service\\n"
@@ -42,23 +45,24 @@ echo -e -n "2) Add New \\ Existing User\\n"
 echo -e -n "3) Disable User\\n"
 echo -e -n "4) Delete User (It Delete all user's files from home)\\n"
 echo -e -n "5) Uninstall Service\\n"
-echo -e -n "6) Clear Temporary Files\\n\\n"
+echo -e -n "6) Clear Temporary Files\\n"
+echo -e -n "7) Show Service-Installed Users\\n\\n"
 
-if [ $1 = "-1" -o  $1 = "-5" -o $1 = "-6" ]; then
-	$funz = ${str: 1:1}
-elif [ $1 = "-2" -o $1 = "-3" -o $1 = "-4" ]; then
-	$funz = ${str: 1:1}
-	if [ $2 = "--list-file"]; then
-		$listfile=$3
+if [ "$1" = "-1" ] || [ "$1" = "-5" ] || [ "$1" = "-6" ] || [ "$1" = "-7" ]; then
+	funz="${1: 1:1}"
+elif [ "$1" = "-2" ] || [ "$1" = "-3" ] || [ "$1" = "-4" ]; then
+	funz="${1: 1:1}"
+	if [ "$2" = "--list-file" ]; then
+		listfile="$3"
 	else 
-		$username=$2
+		username="$2"
 	fi
 else
 	echo -n "INSERT FUNCTION: "
 	read funz
 fi
 
-if [ $funz = "1" ]; then
+if [ "$funz" = "1" ]; then
 	echo "----- INSTALLING SERVICE -----"
 	echo "CHECKING AND INSTALLING MISSING DEPENDENCIES"
 	apt-get -y install acl curl apache2 php libapache2-mod-php php-mysql
@@ -68,13 +72,13 @@ if [ $funz = "1" ]; then
 	a2enmod mpm_itk
 	echo "RESTARTING apache2 service"
 	systemctl restart apache2
-	echo -e "CREATING new SYSTEM group \"VHapache2\" (ID: 1222)"
-	groupadd -g 1222 VHapache2
+	echo -e "CREATING new SYSTEM group \"$grouname\" (ID: $groupid)"
+	groupadd -g $groupid $grouname
 	echo "SERVICE SUCCESFULLY INSTALLED"
 
-elif [ $funz = "2" ]; then
+elif [ "$funz" = "2" ]; then
 	echo "----- ENABLING USER -----"
-	while [ $username = "" ]; do
+	while [ "$username" = "" ]; do
 		echo -n "Enter the username to INSERT (CANNOT BE EMPTY): "
 		read username
 	done
@@ -114,7 +118,7 @@ elif [ $funz = "2" ]; then
 	setfacl -R -m o::--- $PHOME/"$username"
 	
 	cp $FILE1 $PAPACHE/sites-available/"$username".conf 
-	sed -i "s/vhserverdomain/$PHOSTNAME/" $PAPACHE/sites-available/"$username".conf
+	#sed -i "s/vhserverdomain/$PHOSTNAME/" $PAPACHE/sites-available/"$username".conf
 	sed -i "s/defaultuser/$username/" $PAPACHE/sites-available/"$username".conf
 	sed -i "s/defaultuser/$username/" $PAPACHE/sites-available/"$username".conf
 	#
@@ -123,28 +127,28 @@ elif [ $funz = "2" ]; then
 	echo -e "Restarting Apache2 service\\n"
 	systemctl reload apache2
 
-	usermod -a -G VHapache2 "$username"
-	echo -e "USER \"$username\" added to Group VHapache2 (ID: 1222)"
+	usermod -a -G $grouname "$username"
+	echo -e "USER \"$username\" added to Group $grouname (ID: $groupid)"
 
-elif [ $funz = "3" ]; then
+elif [ "$funz" = "3" ]; then
 	echo "----- DISABLING USER SERVICE -----"
-	while [ $username = "" ]; do
-		echo -n "Enter the username to INSERT (CANNOT BE EMPTY): "
+	while [ "$username" = "" ]; do
+		echo -n "Enter the username to DISABLE (CANNOT BE EMPTY): "
 		read username
 	done
 	if getent passwd $username > /dev/null 2>&1; then
 		a2dissite "$username"
-		deluser "$username" VHapache2
+		deluser "$username" $grouname
 		systemctl reload apache2
-		echo -e "DISABLED VH to \"$username\"; removed form Group VHapache2 (ID: 1222)"
+		echo -e "DISABLED VH to \"$username\"; removed form Group $grouname (ID: $groupid)"
 	else
 		echo "ERROR: THE USER DOESN'T EXISTS"		
 	fi
 
-elif [ $funz = "4" ]; then
+elif [ "$funz" = "4" ]; then
 	echo "----- DELETING USER -----"
-	while [ $username = "" ]; do
-		echo -n "Enter the username to INSERT (CANNOT BE EMPTY): "
+	while [ "$username" = "" ]; do
+		echo -n "Enter the username to DELETE (CANNOT BE EMPTY): "
 		read username
 	done
 	if getent passwd $username > /dev/null 2>&1; then
@@ -158,7 +162,7 @@ elif [ $funz = "4" ]; then
 		echo "ERROR: THE USER DOESN'T EXISTS"		
 	fi
 
-elif [ $funz = "5" ]; then
+elif [ "$funz" = "5" ]; then
 	echo "----- UNINSTALLING SERVICE -----"
 	echo -n "Do you wanna Uninstall also Apache2 and PHP? [y\N]: "
 	read uninstall
@@ -170,16 +174,35 @@ elif [ $funz = "5" ]; then
 		apt-get -y purge apache2 php libapache2-mod-php php-mysql
 		rm -R /etc/apache2/
 	fi
-	groupdel VHapache2
+	groupdel $grouname
 	rm -R $TMPDIR
 	echo -e -n "SERVICE UNINSTALLED\\n"
 
-elif [ $funz = "6" ]; then
+elif [ "$funz" = "6" ]; then
 	echo -e -n "----- DELETINH TEMPORARY FILES -----\\n"
 	rm -r $TMPDIR
 	echo -e -n "TEMPORARY FILES DELETED\\n"
 
+elif [ "$funz" = "7" ]; then
+	nchar=$( expr ${#grouname} + ${#groupid} + 4 )
+	echo -e -n "----- SHOWING SERVICE-INSTALLED USERS -----\\n"
+	tstr=$(getent group "$grouname")
+	str=${tstr: nchar}
+	IFS=',' read -ra ADDR <<< "$str"
+	for i in "${ADDR[@]}"; do
+		if [ -f "$PAPACHE/sites-enabled/$i.conf" ]; then
+			echo "$i : config enabled"
+		elif [ -f "$PAPACHE/sites-available/$i.conf" ]; then
+			echo "$i : config disabled"
+		elif [ -d "$PHOME/$i/" ]; then
+			echo "$i : only home found"
+		else
+			echo "$i : -"
+		fi
+	done
+	echo -e -n "----- LIST END ---\\n"
+
 else 
-	echo -e -n "----- BAD FUNCTION SELECTED\\n"
+	echo -e -n "----- BAD FUNCTION SELECTED -----\\n"
 fi
 
